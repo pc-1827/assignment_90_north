@@ -1,0 +1,189 @@
+<!-- templates/chat/chat.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat - ChatApp</title>
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .left-menu {
+            width: 250px;
+            background-color: #f4f4f4;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            transition: width 0.3s;
+            padding: 10px;
+        }
+        .left-menu.collapsed {
+            width: 60px;
+        }
+        .toggle-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #ddd;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+        }
+        .user-list li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #ccc;
+        }
+        .user-list li:hover {
+            background-color: #e0e0e0;
+        }
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ccc;
+        }
+        .message-input {
+            display: flex;
+        }
+        .message-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-top: 1px solid #ccc;
+            font-size: 16px;
+        }
+        .message-input button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-menu" id="left-menu">
+        <button class="toggle-btn" id="toggle-btn">☰</button>
+        <ul class="user-list" id="user-list">
+            {% for user in users %}
+                <li data-username="{{ user.username }}">{{ user.username }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="main-chat" id="main-chat">
+        <div class="messages" id="messages">
+            <p>Select a user to start chatting.</p>
+        </div>
+        <div class="message-input">
+            <input type="text" id="message-input" placeholder="Type your message..." disabled>
+            <button id="send-btn" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById('toggle-btn');
+        const leftMenu = document.getElementById('left-menu');
+        const userList = document.getElementById('user-list');
+        const messages = document.getElementById('messages');
+        const sendBtn = document.getElementById('send-btn');
+        const messageInput = document.getElementById('message-input');
+
+        let selectedUser = null;
+        let socket = null;
+
+        toggleBtn.addEventListener('click', () => {
+            leftMenu.classList.toggle('collapsed');
+            // Optionally, hide/show usernames when collapsed
+            if (leftMenu.classList.contains('collapsed')) {
+                userList.style.display = 'none';
+            } else {
+                userList.style.display = 'block';
+            }
+        });
+
+        userList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const username = e.target.getAttribute('data-username');
+                selectedUser = username;
+                messages.innerHTML = '';
+                fetch(`/messages/${username}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.messages.forEach(msg => {
+                            const p = document.createElement('p');
+                            p.textContent = `${msg.sender}: ${msg.content}`;
+                            messages.appendChild(p);
+                        });
+                        messages.scrollTop = messages.scrollHeight;
+                    })
+                    .catch(error => console.error('Error fetching messages:', error));
+                if (socket) {
+                    socket.close();
+                }
+                connectWebSocket(username);
+            }
+        });
+
+        sendBtn.addEventListener('click', () => {
+            const content = messageInput.value.trim();
+            if (content && selectedUser) {
+                socket.send(JSON.stringify({
+                    'message': content
+                }));
+                messageInput.value = '';
+            }
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendBtn.click();
+            }
+        });
+
+        function connectWebSocket(username) {
+            // Construct WebSocket URL
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const socketUrl = `${protocol}://${window.location.host}/ws/chat/${username}/`;
+            socket = new WebSocket(socketUrl);
+
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established.');
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+            };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                const p = document.createElement('p');
+                p.textContent = `${data.sender}: ${data.message}`;
+                messages.appendChild(p);
+                messages.scrollTop = messages.scrollHeight;
+            };
+
+            socket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+            };
+
+            socket.onclose = function(e) {
+                console.log('WebSocket connection closed.');
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+            };
+        }
+    </script>
+</body>
+</html>
