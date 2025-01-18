@@ -1,17 +1,26 @@
-# Django Framework
+asgiref==3.8.1
+attrs==24.3.0
+autobahn==24.4.2
+Automat==24.8.1
+cffi==1.17.1
+channels==4.2.0
+constantly==23.10.4
+cryptography==44.0.0
+daphne==4.1.2
 Django==4.2.18
-
-# Django Channels for WebSocket support
-channels==4.0.0
-
-# Daphne ASGI server
-daphne==4.0.0
-
-# Channels Redis backend (for channel layers)
-channels-redis==4.0.0
-
-# PostgreSQL database adapter
-psycopg2-binary==2.9.6
-
-# Redis server (client library)
-redis==4.5.5
+djangorestframework==3.15.2
+hyperlink==21.0.0
+idna==3.10
+incremental==24.7.2
+psycopg2-binary==2.9.10
+pyasn1==0.6.1
+pyasn1-modules==0.4.1
+pycparser==2.22
+pyOpenSSL==25.0.0
+service-identity==24.2.0
+sqlparse==0.5.3
+tomli==2.2.1
+twisted==24.11.0
+txaio==23.1.1
+typing-extensions==4.12.2
+zope.interface==7.2
